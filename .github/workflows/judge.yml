@@ -9,7 +9,7 @@ jobs:
   judge:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 2
 
@@ -27,7 +27,7 @@ jobs:
           GEMINI_MODEL: gemini-3.8-flash
         run: python3 scripts/judge.py
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: judgment-${{ github.sha }}
           path: judgment.json

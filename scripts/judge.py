@@ -25,12 +25,18 @@ req = urllib.request.Request(
     data=body,
     headers={"Content-Type": "application/json", "x-goog-api-key": key},
 )
+print(f"Asking {model}. Diff length: {len(diff)} characters.", flush=True)
 try:
-    with urllib.request.urlopen(req, timeout=60) as response:
+    with urllib.request.urlopen(req, timeout=180) as response:
         payload = json.load(response)
 except urllib.error.HTTPError as error:
     detail = error.read().decode("utf-8", errors="replace")[:2000]
     raise SystemExit(f"Gemini returned HTTP {error.code} for model {model}:\n{detail}")
+except TimeoutError:
+    raise SystemExit(
+        f"{model} did not answer within 3 minutes. "
+        "Re-run the job, or set GEMINI_MODEL to a faster model such as gemini-3.5-flash-lite."
+    )
 text = payload["candidates"][0]["content"]["parts"][0]["text"]
 print(text)
 open("judgment.json", "w", encoding="utf-8").write(text + "\n")
