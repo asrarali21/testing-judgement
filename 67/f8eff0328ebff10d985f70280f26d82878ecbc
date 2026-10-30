@@ -1,0 +1,14 @@
+add.py
+  h_5da85191635ba8 67-99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "67f8eff0328ebff10d985f70280f26d82878ecbc",
+  "prompts": {},
+  "humans": {
+    "h_5da85191635ba8": {
+      "author": "asrarali21 <mohdasrar3825@gmail.com>"
+    }
+  }
+}
