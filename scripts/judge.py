@@ -1,6 +1,15 @@
-import json, os, urllib.request
+import json, os, urllib.error, urllib.request
+
+key = os.environ.get("GEMINI_API_KEY", "").strip()
+if not key:
+    raise SystemExit(
+        "GEMINI_API_KEY is empty. In the GitHub repo open Settings, "
+        "Secrets and variables, Actions, and add a secret named GEMINI_API_KEY."
+    )
 
 diff = open("diff.txt", encoding="utf-8", errors="replace").read()[:12000]
+if not diff.strip():
+    diff = "(empty diff)"
 prompt = (
     "You are judging a git diff. Decide whether an AI coding agent wrote the changed code. "
     "You only have the diff. Reply with JSON only, no markdown: "
@@ -14,13 +23,14 @@ model = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
 req = urllib.request.Request(
     f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
     data=body,
-    headers={
-        "Content-Type": "application/json",
-        "x-goog-api-key": os.environ["GEMINI_API_KEY"],
-    },
+    headers={"Content-Type": "application/json", "x-goog-api-key": key},
 )
-with urllib.request.urlopen(req, timeout=60) as response:
-    payload = json.load(response)
+try:
+    with urllib.request.urlopen(req, timeout=60) as response:
+        payload = json.load(response)
+except urllib.error.HTTPError as error:
+    detail = error.read().decode("utf-8", errors="replace")[:2000]
+    raise SystemExit(f"Gemini returned HTTP {error.code} for model {model}:\n{detail}")
 text = payload["candidates"][0]["content"]["parts"][0]["text"]
 print(text)
 open("judgment.json", "w", encoding="utf-8").write(text + "\n")
