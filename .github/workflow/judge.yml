@@ -1,0 +1,33 @@
+name: Judge commit
+
+on: push
+
+permissions:
+  contents: read
+
+jobs:
+  judge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Collect the diff
+        run: |
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            git diff HEAD~1 HEAD -- . ':(exclude).github' ':(exclude)scripts' > diff.txt
+          else
+            git diff --root HEAD -- . ':(exclude).github' ':(exclude)scripts' > diff.txt
+          fi
+
+      - name: Ask the model
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-3.8-flash
+        run: python3 scripts/judge.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: judgment-${{ github.sha }}
+          path: judgment.json
