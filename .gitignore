@@ -3,3 +3,4 @@ judgment.json
 diff.txt
 commit_authors.txt
 judgments/
+__pycache__/
