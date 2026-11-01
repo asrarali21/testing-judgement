@@ -61,6 +61,8 @@ def collapse(rows):
             base["merged"] = True
             base["merged_at"] = merge.get("merged_at")
             base["merge_commit_sha"] = merge.get("merge_commit_sha")
+            base["updated_at"] = merge.get("updated_at") or base.get("updated_at")
+            base["event"] = "merged"
         combined.append(base)
     return combined
 
@@ -109,7 +111,7 @@ def ensure_published(workspace):
         f"/workspaces/{workspace}/onboarding/ontology/confirm",
         {"hash": ontology["hash"]},
     )
-    for _ in range(60):
+    for _ in range(90):
         state = request("GET", f"/workspaces/{workspace}/onboarding")
         if state.get("complete"):
             return
