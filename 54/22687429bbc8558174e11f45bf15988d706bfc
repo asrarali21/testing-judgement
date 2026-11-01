@@ -1,0 +1,25 @@
+scripts/load_helix.py
+  s_42a66f5bac15cf::t_d9cf7c42cb8fb2 1-219
+.gitignore
+  s_42a66f5bac15cf::t_57d63106afeb27 1-5
+.github/workflows/judge.yml
+  s_42a66f5bac15cf::t_5195f562b90889 1,3-5,12,14,18-19,21-25,27-29,31,33,39-58,63-64
+scripts/judge.py
+  s_42a66f5bac15cf::t_9ac03e49a57b89 1-19,22-66,68-129
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5422687429bbc8558174e11f45bf15988d706bfc",
+  "prompts": {},
+  "sessions": {
+    "s_42a66f5bac15cf": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "27a61a9b-ef32-430a-a74e-3164ea41df69",
+        "model": "grok-4.7-high-fast"
+      },
+      "human_author": "asrarali21 <mohdasrar3825@gmail.com>"
+    }
+  }
+}
