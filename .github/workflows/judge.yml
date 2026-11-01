@@ -1,33 +1,64 @@
-name: Judge commit
+name: Judge pull request
 
-on: push
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
 
 permissions:
   contents: read
 
 jobs:
   judge:
+    if: github.event.action != 'closed' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
         with:
-          fetch-depth: 2
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
 
-      - name: Collect the diff
+      - name: Collect the pull request
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MERGED: ${{ github.event.pull_request.merged }}
         run: |
-          if git rev-parse HEAD~1 >/dev/null 2>&1; then
-            git diff HEAD~1 HEAD -- . ':(exclude).github' ':(exclude)scripts' > diff.txt
+          git fetch --no-tags origin "$BASE_SHA"
+          if [ "$MERGED" = "true" ]; then
+            : > diff.txt
           else
-            git diff --root HEAD -- . ':(exclude).github' ':(exclude)scripts' > diff.txt
+            git diff "$BASE_SHA...$HEAD_SHA" -- . ':(exclude).github' ':(exclude)scripts' > diff.txt
           fi
+          git log --format='%an <%ae>' "$BASE_SHA...$HEAD_SHA" > commit_authors.txt
 
       - name: Ask the model
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3.8-flash
+          SKIP_MODEL: ${{ github.event.pull_request.merged == true && '1' || '0' }}
+          REPOSITORY: ${{ github.repository }}
+          PULL_REQUEST: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          AUTHOR_LOGIN: ${{ github.event.pull_request.user.login }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          COMMITS: ${{ github.event.pull_request.commits }}
+          ADDITIONS: ${{ github.event.pull_request.additions }}
+          DELETIONS: ${{ github.event.pull_request.deletions }}
+          CHANGED_FILES: ${{ github.event.pull_request.changed_files }}
+          CREATED_AT: ${{ github.event.pull_request.created_at }}
+          UPDATED_AT: ${{ github.event.pull_request.updated_at }}
+          MERGED: ${{ github.event.pull_request.merged }}
+          MERGED_AT: ${{ github.event.pull_request.merged_at }}
+          MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          EVENT: ${{ github.event.pull_request.merged == true && 'merged' || github.event.action }}
         run: python3 scripts/judge.py
 
       - uses: actions/upload-artifact@v7
         with:
-          name: judgment-${{ github.sha }}
+          name: judgment-pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.merged == true && 'merged' || github.event.action }}-${{ github.run_id }}
           path: judgment.json
