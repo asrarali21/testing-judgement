@@ -1,0 +1,19 @@
+.gitignore
+  s_42a66f5bac15cf::t_7da65367260da9 5-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "39deb9cdd1f70c589eb6f10063af3841abdee436",
+  "prompts": {},
+  "sessions": {
+    "s_42a66f5bac15cf": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "27a61a9b-ef32-430a-a74e-3164ea41df69",
+        "model": "grok-4.7-high-fast"
+      },
+      "human_author": "asrarali21 <mohdasrar3825@gmail.com>"
+    }
+  }
+}
