@@ -1,0 +1,20 @@
+scripts/load_helix.py
+  s_42a66f5bac15cf::t_d2b469d08928d0 114
+  s_42a66f5bac15cf::t_12b175d561a875 64-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7ae7d407eddad2641f7981480498d61950b47a74",
+  "prompts": {},
+  "sessions": {
+    "s_42a66f5bac15cf": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "27a61a9b-ef32-430a-a74e-3164ea41df69",
+        "model": "grok-4.7-high-fast"
+      },
+      "human_author": null
+    }
+  }
+}
