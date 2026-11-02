@@ -87,7 +87,6 @@ def logout(username: str) -> None:
         print(f"[logout] Unknown user '{username}'.")
 
 
-
 if __name__ == "__main__":
     # Register two users
     register_user("alice", "secret123")
