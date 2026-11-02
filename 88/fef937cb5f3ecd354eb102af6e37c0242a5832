@@ -1,0 +1,28 @@
+scripts/judge.py
+  s_f3978dc62cdea0::t_669927d0761738 22-109,157
+  s_f3978dc62cdea0::t_b76daad5ece104 203-207
+  s_f3978dc62cdea0::t_accd5db0edd337 154-156
+  s_f3978dc62cdea0::t_f5b6bad6116415 158-160
+  s_f3978dc62cdea0::t_007dafec2b27cd 124-128,133,135-137,139-150,153,197-199
+.github/workflows/judge.yml
+  s_f3978dc62cdea0::t_08013754638c0f 9
+  s_f3978dc62cdea0::t_5922d3f7c32537 69
+  s_f3978dc62cdea0::t_91d1803dbcf8b8 10
+  s_f3978dc62cdea0::t_9e99e3d37b1a65 37-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "88fef937cb5f3ecd354eb102af6e37c0242a5832",
+  "prompts": {},
+  "sessions": {
+    "s_f3978dc62cdea0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3433951b-57a0-4d8a-b617-b6a1d241d46e",
+        "model": "grok-4.7"
+      },
+      "human_author": "asrarali21 <mohdasrar3825@gmail.com>"
+    }
+  }
+}
