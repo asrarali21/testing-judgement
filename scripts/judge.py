@@ -1,7 +1,5 @@
 import json
 import os
-import urllib.error
-import urllib.request
 from datetime import datetime, timezone
 
 
@@ -33,60 +31,44 @@ sent = diff[:12000]
 skip_model = os.environ.get("SKIP_MODEL", "").strip() == "1"
 empty = not diff.strip()
 
+tool_fields = {
+    "judge_tool": None,
+    "synthetic_code_score": None,
+    "match_count": None,
+}
 ai_generated = None
 confidence = None
 model = None
 if skip_model:
-    reason = "Already judged on the pull request. The merge was not sent to the model again."
+    reason = "Already judged on the pull request. The merge was not sent to the scanner again."
 elif empty:
-    reason = "No application code changed in this pull request, so it was not sent to the model."
+    reason = "No application code changed in this pull request, so it was not scanned."
+elif not os.path.exists("synthscan-report.json"):
+    raise SystemExit("SynthScan did not write synthscan-report.json.")
 else:
-    key = os.environ.get("GEMINI_API_KEY", "").strip()
-    if not key:
-        raise SystemExit(
-            "GEMINI_API_KEY is empty. In the GitHub repo open Settings, "
-            "Secrets and variables, Actions, and add a secret named GEMINI_API_KEY."
+    report = json.load(open("synthscan-report.json", encoding="utf-8"))
+    score = float(report.get("synthetic_code_score") or 0)
+    matches = int(report.get("match_count") or 0)
+    # SynthScan's own bands: 0–5 likely human, 5–15 low signal, 15 and above moderate.
+    ai_generated = score >= 15
+    confidence = max(0.0, min(1.0, score / 30))
+    reason = (
+        f"SynthScan score {score} per 1,000 lines, {matches} pattern matches. "
+        + (
+            "That is in the moderate-or-higher band."
+            if ai_generated
+            else "That is below the moderate band."
         )
-    model = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
-    prompt = (
-        "You are judging a pull request diff. Decide whether an AI coding agent "
-        "wrote the changed code. You only have the diff. Reply with JSON only, "
-        "no markdown: "
-        '{"ai_generated": true or false, "confidence": 0 to 1, "reason": "one sentence"}'
     )
-    body = json.dumps(
-        {
-            "contents": [{"parts": [{"text": prompt + "\n\nDIFF:\n" + sent}]}],
-            "generationConfig": {"responseMimeType": "application/json"},
-        }
-    ).encode()
-    req = urllib.request.Request(
-        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-        data=body,
-        headers={"Content-Type": "application/json", "x-goog-api-key": key},
+    tool_fields = {
+        "judge_tool": "synthscan",
+        "synthetic_code_score": score,
+        "match_count": matches,
+    }
+    print(
+        f"SynthScan score {score}, matches {matches}, diff {len(sent)} characters.",
+        flush=True,
     )
-    print(f"Asking {model}. Diff length: {len(sent)} characters.", flush=True)
-    try:
-        with urllib.request.urlopen(req, timeout=180) as response:
-            payload = json.load(response)
-    except urllib.error.HTTPError as error:
-        detail = error.read().decode("utf-8", errors="replace")[:2000]
-        raise SystemExit(f"Gemini returned HTTP {error.code} for model {model}:\n{detail}")
-    except TimeoutError:
-        raise SystemExit(
-            f"{model} did not answer within 3 minutes. "
-            "Re-run the job, or set GEMINI_MODEL to a faster model such as gemini-3.5-flash-lite."
-        )
-    answer = json.loads(payload["candidates"][0]["content"]["parts"][0]["text"])
-    if not isinstance(answer.get("ai_generated"), bool):
-        raise SystemExit("The model did not return ai_generated as true or false.")
-    try:
-        confidence = float(answer.get("confidence"))
-    except (TypeError, ValueError):
-        raise SystemExit("The model did not return a numeric confidence.")
-    confidence = max(0.0, min(1.0, confidence))
-    ai_generated = answer["ai_generated"]
-    reason = str(answer.get("reason") or "").strip() or "The model gave no reason."
 
 if ai_generated is True:
     mark = "Marked AI"
@@ -122,6 +104,9 @@ row = {
     "confidence": confidence,
     "mark": mark,
     "reason": reason,
+    "judge_tool": tool_fields["judge_tool"],
+    "synthetic_code_score": tool_fields["synthetic_code_score"],
+    "match_count": tool_fields["match_count"],
     "diff_characters": 0 if skip_model else len(sent),
     "diff_truncated": False if skip_model else len(diff) > 12000,
 }
