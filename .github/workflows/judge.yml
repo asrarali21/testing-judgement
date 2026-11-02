@@ -38,6 +38,7 @@ jobs:
         uses: marcoramilli/SynthScan@bd903b621d1896b6051e9c2f140c048d8f6c29ed
         with:
           diff_file: diff.txt
+          patterns_file: /home/runner/work/_actions/marcoramilli/SynthScan/bd903b621d1896b6051e9c2f140c048d8f6c29ed/patterns/synthetic_patterns.md
           create_issue: "false"
           score_threshold: "0"
           report_path: synthscan-report.json
