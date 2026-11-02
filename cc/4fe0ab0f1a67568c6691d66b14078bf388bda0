@@ -1,0 +1,20 @@
+scripts/judge.py
+  s_f3978dc62cdea0::t_caf799fbca69e2 158-175
+  s_f3978dc62cdea0::t_47b74b37d4ee4b 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cc4fe0ab0f1a67568c6691d66b14078bf388bda0",
+  "prompts": {},
+  "sessions": {
+    "s_f3978dc62cdea0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3433951b-57a0-4d8a-b617-b6a1d241d46e",
+        "model": "grok-4.7"
+      },
+      "human_author": "asrarali21 <mohdasrar3825@gmail.com>"
+    }
+  }
+}
