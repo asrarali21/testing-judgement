@@ -125,6 +125,7 @@ def judge():
     ai_generated = None
     confidence = None
     model = None
+    model_error = None
     if skip_model:
         reason = "Already judged on the pull request. The merge was not sent to the model again."
     elif empty:
@@ -167,22 +168,27 @@ def judge():
                     print(f"Gemini HTTP {error.code}. Retrying.", flush=True)
                     time.sleep(20)
                     continue
-                raise SystemExit(f"Gemini returned HTTP {error.code} for model {model}:\n{detail}")
+                model_error = f"Gemini returned HTTP {error.code} for model {model}:\n{detail}"
+                break
             except TimeoutError:
-                raise SystemExit(
+                model_error = (
                     f"{model} did not answer within 3 minutes. "
                     "Re-run the job, or set GEMINI_MODEL to a faster model such as gemini-3.5-flash-lite."
                 )
-        answer = json.loads(payload["candidates"][0]["content"]["parts"][0]["text"])
-        if not isinstance(answer.get("ai_generated"), bool):
-            raise SystemExit("The model did not return ai_generated as true or false.")
-        try:
-            confidence = float(answer.get("confidence"))
-        except (TypeError, ValueError):
-            raise SystemExit("The model did not return a numeric confidence.")
-        confidence = max(0.0, min(1.0, confidence))
-        ai_generated = answer["ai_generated"]
-        reason = str(answer.get("reason") or "").strip() or "The model gave no reason."
+                break
+        if model_error:
+            reason = model_error.split("\n", 1)[0]
+        else:
+            answer = json.loads(payload["candidates"][0]["content"]["parts"][0]["text"])
+            if not isinstance(answer.get("ai_generated"), bool):
+                raise SystemExit("The model did not return ai_generated as true or false.")
+            try:
+                confidence = float(answer.get("confidence"))
+            except (TypeError, ValueError):
+                raise SystemExit("The model did not return a numeric confidence.")
+            confidence = max(0.0, min(1.0, confidence))
+            ai_generated = answer["ai_generated"]
+            reason = str(answer.get("reason") or "").strip() or "The model gave no reason."
 
     if ai_generated is True:
         mark = "Marked AI"
@@ -228,6 +234,8 @@ def judge():
         raise SystemExit(f"GitHub returned HTTP {error.code}:\n{detail}")
     print(json.dumps(row, indent=2))
     open("judgment.json", "w", encoding="utf-8").write(json.dumps(row, indent=2) + "\n")
+    if model_error:
+        raise SystemExit(model_error)
 
 
 def metrics_for_saved(paths):
