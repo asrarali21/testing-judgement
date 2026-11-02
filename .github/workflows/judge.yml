@@ -6,6 +6,8 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
+  actions: read
 
 jobs:
   judge:
@@ -36,6 +38,7 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3.8-flash
+          GH_TOKEN: ${{ github.token }}
           SKIP_MODEL: ${{ github.event.pull_request.merged == true && '1' || '0' }}
           REPOSITORY: ${{ github.repository }}
           PULL_REQUEST: ${{ github.event.pull_request.number }}
@@ -59,6 +62,7 @@ jobs:
         run: python3 scripts/judge.py
 
       - uses: actions/upload-artifact@v7
+        if: always()
         with:
           name: judgment-pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.merged == true && 'merged' || github.event.action }}-${{ github.run_id }}
           path: judgment.json
