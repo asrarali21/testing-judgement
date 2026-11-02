@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  actions: write
 
 jobs:
   judge:
@@ -32,10 +33,17 @@ jobs:
           fi
           git log --format='%an <%ae>' "$BASE_SHA...$HEAD_SHA" > commit_authors.txt
 
-      - name: Ask the model
+      - name: Scan the diff
+        if: github.event.pull_request.merged != true
+        uses: marcoramilli/SynthScan@bd903b621d1896b6051e9c2f140c048d8f6c29ed
+        with:
+          diff_file: diff.txt
+          create_issue: "false"
+          score_threshold: "0"
+          report_path: synthscan-report.json
+
+      - name: Write the judgment
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_MODEL: gemini-3.8-flash
           SKIP_MODEL: ${{ github.event.pull_request.merged == true && '1' || '0' }}
           REPOSITORY: ${{ github.repository }}
           PULL_REQUEST: ${{ github.event.pull_request.number }}
