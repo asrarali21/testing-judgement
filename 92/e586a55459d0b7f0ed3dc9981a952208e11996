@@ -1,0 +1,16 @@
+calculator.py
+  h_5da85191635ba8 5-8
+tests/test_calculator.py
+  h_5da85191635ba8 3,13-14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "92e586a55459d0b7f0ed3dc9981a952208e11996",
+  "prompts": {},
+  "humans": {
+    "h_5da85191635ba8": {
+      "author": "asrarali21 <mohdasrar3825@gmail.com>"
+    }
+  }
+}
