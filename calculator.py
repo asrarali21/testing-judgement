@@ -3,3 +3,6 @@ def add(left, right):
 
 def subtract(left, right):
     return left - right
+
+def multiply(left,right):
+    return left * right
