@@ -1,0 +1,29 @@
+scripts/load_helix.py
+  s_f888f02d332675::t_e10492bf4156b5 3,8,12-14,37-38,44-65,71,74-79,88-128,130-224
+  s_f888f02d332675::t_ac6e7c0e7afdbd 236,239,244-246,283-284,290,292,299,302-317,319-321,324-325,327-342,345-346,348-349,353-368,370-371,374-375,377-379,382-383,385-386,409,411-414,416,421,423
+scripts/judge.py
+  s_f888f02d332675::t_56160c62ee1995 22-34,92,95-97,100-104,114-134,136-138,144-174,177,180-195,197,282-289
+  s_f888f02d332675::t_1038e5b1c3e371 224
+docs/COMPETENCY_POC.md
+  s_f888f02d332675::t_649d17cd5f50d8 1-96
+tests/test_load_helix.py
+  s_f888f02d332675::t_1f609cc70d13ff 1-91
+.github/workflows/judge.yml
+  s_f888f02d332675::t_893466b421ea68 10,26,29,37,46-50,53,73,75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "72175d0bd72f8baa615a563a7cc8eede87a546d3",
+  "prompts": {},
+  "sessions": {
+    "s_f888f02d332675": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "fd89fd9d-5502-4d11-9cc3-48384e5e68d6",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "asrarali21 <mohdasrar3825@gmail.com>"
+    }
+  }
+}
