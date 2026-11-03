@@ -7,11 +7,10 @@ on:
 permissions:
   contents: read
   pull-requests: read
-  actions: write
+  actions: read
 
 jobs:
   judge:
-    if: github.event.action != 'closed' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -24,10 +23,10 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          MERGED: ${{ github.event.pull_request.merged }}
+          EVENT_ACTION: ${{ github.event.action }}
         run: |
           git fetch --no-tags origin "$BASE_SHA"
-          if [ "$MERGED" = "true" ]; then
+          if [ "$EVENT_ACTION" = "closed" ]; then
             : > diff.txt
           else
             git diff "$BASE_SHA...$HEAD_SHA" -- . ':(exclude).github' ':(exclude)scripts' > diff.txt
@@ -35,7 +34,7 @@ jobs:
           git log --format='%an <%ae>' "$BASE_SHA...$HEAD_SHA" > commit_authors.txt
 
       - name: Scan the diff
-        if: github.event.pull_request.merged != true
+        if: github.event.action != 'closed'
         uses: marcoramilli/SynthScan@bd903b621d1896b6051e9c2f140c048d8f6c29ed
         with:
           diff_file: diff.txt
@@ -44,9 +43,14 @@ jobs:
           score_threshold: "0"
           report_path: synthscan-report.json
 
+      - name: Load the trusted collector
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: git show "$BASE_SHA:scripts/judge.py" > /tmp/judge.py
+
       - name: Write the judgment
         env:
-          SKIP_MODEL: ${{ github.event.pull_request.merged == true && '1' || '0' }}
+          SKIP_MODEL: ${{ github.event.action == 'closed' && '1' || '0' }}
           REPOSITORY: ${{ github.repository }}
           PULL_REQUEST: ${{ github.event.pull_request.number }}
           PR_TITLE: ${{ github.event.pull_request.title }}
@@ -66,8 +70,9 @@ jobs:
           MERGED_AT: ${{ github.event.pull_request.merged_at }}
           MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}
           EVENT: ${{ github.event.pull_request.merged == true && 'merged' || github.event.action }}
+          JUDGMENT_WORKFLOW_NAME: Judge pull request
           GH_TOKEN: ${{ github.token }}
-        run: python3 scripts/judge.py
+        run: python3 /tmp/judge.py
 
       - uses: actions/upload-artifact@v7
         with:
