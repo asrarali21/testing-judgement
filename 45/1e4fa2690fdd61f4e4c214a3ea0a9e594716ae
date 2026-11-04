@@ -1,0 +1,19 @@
+scripts/judge.py
+  s_43b451660d0f4d::t_804ab5ae5ea147 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "451e4fa2690fdd61f4e4c214a3ea0a9e594716ae",
+  "prompts": {},
+  "sessions": {
+    "s_43b451660d0f4d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a4ec-946e-7853-9386-9758d8211d6b",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "asrarali21 <mohdasrar3825@gmail.com>"
+    }
+  }
+}
