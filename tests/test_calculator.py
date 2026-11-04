@@ -23,8 +23,9 @@ class CalculatorTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             average([])
     
-    def test_modulo(self):
-        self.assertEqual(modulo(10, 3), 1)
+    def test_modulo_rejects_zero(self):
+        with self.assertRaises(ValueError):
+            modulo(10, 0)
 
 
 if __name__ == "__main__":

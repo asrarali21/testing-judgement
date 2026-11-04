@@ -23,6 +23,8 @@ def average(values):
     if not items:
         raise ValueError("values must not be empty")
     return sum(items) / len(items)
-    
+
 def modulo(left, right):
-    return left / right
+    if right == 0:
+        raise ValueError("Cannot divide by zero")
+    return left % right
