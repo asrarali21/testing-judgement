@@ -269,7 +269,14 @@ def retry_assessment(provider, request, attempts):
         try:
             return request(), None
         except urllib.error.HTTPError as error:
-            message = f"{provider} returned HTTP {error.code}."
+            detail = error.read().decode("utf-8", errors="replace")[:500]
+            try:
+                payload = json.loads(detail)
+                if isinstance(payload, dict) and isinstance(payload.get("error"), dict):
+                    detail = str(payload["error"].get("message", detail))
+            except json.JSONDecodeError:
+                pass
+            message = f"{provider} returned HTTP {error.code}: {detail}".strip()
             retryable = error.code in {429, 500, 502, 503, 504}
         except (TimeoutError, urllib.error.URLError) as error:
             message = f"{provider} request failed: {error}"
