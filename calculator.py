@@ -6,3 +6,6 @@ def subtract(left, right):
 
 def multiply(left,right):
     return left * right
+
+def power(base, exponent):
+    return base ** exponent
