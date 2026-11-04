@@ -1,0 +1,23 @@
+scripts/judge.py
+  s_43b451660d0f4d::t_1f54814eae294e 305,361-362
+  s_43b451660d0f4d::t_9d27635edd8e6c 201-285
+  s_43b451660d0f4d::t_db251d16545094 312-333,335-348,350-359,403
+.github/workflows/judge.yml
+  s_43b451660d0f4d::t_db251d16545094 67-68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a80a03c5a0bdd077021e08c441e292b714488ce0",
+  "prompts": {},
+  "sessions": {
+    "s_43b451660d0f4d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a4ec-946e-7853-9386-9758d8211d6b",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "asrarali21 <mohdasrar3825@gmail.com>"
+    }
+  }
+}
