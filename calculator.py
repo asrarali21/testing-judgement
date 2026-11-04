@@ -6,3 +6,6 @@ def subtract(left, right):
 
 def multiply(left,right):
     return left * right
+
+def divide(left, right):
+    return left / right
