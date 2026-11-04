@@ -256,6 +256,7 @@ def groq_assessment(key, model, prompt, diff):
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {key}",
+            "User-Agent": "helix-pr-judgment/1.0",
         },
     )
     with urllib.request.urlopen(request, timeout=90) as response:
