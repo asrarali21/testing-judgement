@@ -33,16 +33,6 @@ jobs:
           fi
           git log --format='%an <%ae>' "$BASE_SHA...$HEAD_SHA" > commit_authors.txt
 
-      - name: Scan the diff
-        if: github.event.action != 'closed'
-        uses: marcoramilli/SynthScan@bd903b621d1896b6051e9c2f140c048d8f6c29ed
-        with:
-          diff_file: diff.txt
-          patterns_file: /home/runner/work/_actions/marcoramilli/SynthScan/bd903b621d1896b6051e9c2f140c048d8f6c29ed/patterns/synthetic_patterns.md
-          create_issue: "false"
-          score_threshold: "0"
-          report_path: synthscan-report.json
-
       - name: Load the trusted collector
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -72,6 +62,8 @@ jobs:
           EVENT: ${{ github.event.pull_request.merged == true && 'merged' || github.event.action }}
           JUDGMENT_WORKFLOW_NAME: Judge pull request
           GH_TOKEN: ${{ github.token }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-3.8-flash
         run: python3 /tmp/judge.py
 
       - uses: actions/upload-artifact@v7

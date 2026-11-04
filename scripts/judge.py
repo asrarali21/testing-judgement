@@ -212,51 +212,79 @@ sent = diff[:12000]
 skip_model = os.environ.get("SKIP_MODEL", "").strip() == "1"
 empty = not diff.strip()
 
-tool_fields = {
-    "judge_tool": None,
-    "synthetic_code_score": None,
-    "match_count": None,
-}
-ai_generated = None
-confidence = None
+assessment_status = "unavailable"
+estimated_ai_assistance_pct = None
+evidence = []
+assessment_error = None
 model = None
 if skip_model:
-    reason = "Lifecycle update only. The pull request was not sent to the scanner again."
+    reason = "Lifecycle update only. The pull request was not assessed again."
 elif empty:
-    reason = "No application code changed in this pull request, so it was not scanned."
-elif not os.path.exists("synthscan-report.json"):
-    raise SystemExit("SynthScan did not write synthscan-report.json.")
+    assessment_status = "insufficient_evidence"
+    reason = "No application code changed in this pull request."
 else:
-    report = json.load(open("synthscan-report.json", encoding="utf-8"))
-    score = float(report.get("synthetic_code_score") or 0)
-    matches = int(report.get("match_count") or 0)
-    # SynthScan's own bands: 0–5 likely human, 5–15 low signal, 15 and above moderate.
-    ai_generated = score >= 15
-    confidence = max(0.0, min(1.0, score / 30))
-    reason = (
-        f"SynthScan score {score} per 1,000 lines, {matches} pattern matches. "
-        + (
-            "That is in the moderate-or-higher band."
-            if ai_generated
-            else "That is below the moderate band."
+    key = os.environ.get("GEMINI_API_KEY", "").strip()
+    model = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash").strip()
+    if not key:
+        assessment_error = "GEMINI_API_KEY is not configured."
+    elif not model:
+        assessment_error = "GEMINI_MODEL is not configured."
+    else:
+        prompt = (
+            "Assess only the supplied pull request diff. Estimate the approximate "
+            "percentage of changed code that appears AI-assisted. This is an "
+            "uncertain heuristic, not an authorship determination and not an "
+            "assessment of the developer. Return JSON only with exactly these keys: "
+            '{"assessment_status":"assessed" or "insufficient_evidence", '
+            '"estimated_ai_assistance_pct": integer from 0 to 100 or null, '
+            '"evidence": [up to three short, concrete observations about the diff]}. '
+            "Use insufficient_evidence with a null percentage when the diff cannot "
+            "support an estimate."
         )
-    )
-    tool_fields = {
-        "judge_tool": "synthscan",
-        "synthetic_code_score": score,
-        "match_count": matches,
-    }
-    print(
-        f"SynthScan score {score}, matches {matches}, diff {len(sent)} characters.",
-        flush=True,
-    )
+        body = json.dumps(
+            {
+                "contents": [{"parts": [{"text": prompt + "\n\nDIFF:\n" + sent}]}],
+                "generationConfig": {"responseMimeType": "application/json"},
+            }
+        ).encode()
+        request = urllib.request.Request(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+            data=body,
+            headers={"Content-Type": "application/json", "x-goog-api-key": key},
+        )
+        print(f"Asking {model}. Diff length: {len(sent)} characters.", flush=True)
+        try:
+            with urllib.request.urlopen(request, timeout=180) as response:
+                payload = json.load(response)
+            answer = json.loads(payload["candidates"][0]["content"]["parts"][0]["text"])
+            assessment_status = str(answer.get("assessment_status") or "")
+            if assessment_status not in {"assessed", "insufficient_evidence"}:
+                raise ValueError("assessment_status must be assessed or insufficient_evidence")
+            raw_pct = answer.get("estimated_ai_assistance_pct")
+            if assessment_status == "assessed":
+                if not isinstance(raw_pct, int) or isinstance(raw_pct, bool):
+                    raise ValueError("assessed requires an integer percentage")
+                estimated_ai_assistance_pct = raw_pct
+                if not 0 <= estimated_ai_assistance_pct <= 100:
+                    raise ValueError("estimated_ai_assistance_pct must be from 0 to 100")
+            elif raw_pct is not None:
+                raise ValueError("insufficient_evidence requires a null percentage")
+            raw_evidence = answer.get("evidence")
+            if not isinstance(raw_evidence, list) or len(raw_evidence) > 3:
+                raise ValueError("evidence must be a list with at most three items")
+            evidence = [str(item).strip() for item in raw_evidence if str(item).strip()]
+            reason = evidence[0] if evidence else "No diff-specific evidence returned."
+        except (KeyError, IndexError, TypeError, ValueError, json.JSONDecodeError) as error:
+            assessment_status = "unavailable"
+            assessment_error = f"Gemini returned an invalid assessment: {error}"
+        except urllib.error.HTTPError as error:
+            assessment_error = f"Gemini returned HTTP {error.code}."
+        except (TimeoutError, urllib.error.URLError) as error:
+            assessment_error = f"Gemini request failed: {error}"
+    if assessment_error:
+        reason = assessment_error
 
-if ai_generated is True:
-    mark = "Marked AI"
-elif ai_generated is False:
-    mark = "Not marked AI"
-else:
-    mark = "Not judged"
+mark = "AI assistance assessed" if assessment_status == "assessed" else "Not assessed"
 
 row = {
     "repository": text("REPOSITORY"),
@@ -289,13 +317,14 @@ row = {
     "lead_time_hours": elapsed_hours(text("CREATED_AT"), text("MERGED_AT")),
     "judged_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     "model": model,
-    "ai_generated": ai_generated,
-    "confidence": confidence,
+    "assessment_status": assessment_status,
+    "estimated_ai_assistance_pct": estimated_ai_assistance_pct,
+    "evidence": evidence,
+    "assessment_error": assessment_error,
     "mark": mark,
     "reason": reason,
-    "judge_tool": tool_fields["judge_tool"],
-    "synthetic_code_score": tool_fields["synthetic_code_score"],
-    "match_count": tool_fields["match_count"],
+    "judge_tool": "gemini" if not skip_model and not empty else None,
+    "assessment_schema_version": "ai-assistance-v1",
     "diff_characters": 0 if skip_model else len(sent),
     "diff_truncated": False if skip_model else len(diff) > 12000,
 }
