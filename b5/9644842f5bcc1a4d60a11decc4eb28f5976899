@@ -1,0 +1,22 @@
+.github/workflows/judge.yml
+  h_5da85191635ba8 65-66
+docs/COMPETENCY_POC.md
+  h_5da85191635ba8 83-91,102-103
+scripts/judge.py
+  h_5da85191635ba8 215-218,221,223-224,226-242,244-285,287,320-323,326-327
+scripts/load_helix.py
+  h_5da85191635ba8 126-137,184-190,238-241,411-433
+tests/test_load_helix.py
+  h_5da85191635ba8 23,45,63-64,76-77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b59644842f5bcc1a4d60a11decc4eb28f5976899",
+  "prompts": {},
+  "humans": {
+    "h_5da85191635ba8": {
+      "author": "asrarali21 <mohdasrar3825@gmail.com>"
+    }
+  }
+}
