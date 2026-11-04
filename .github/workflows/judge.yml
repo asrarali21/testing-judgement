@@ -35,8 +35,10 @@ jobs:
 
       - name: Load the trusted collector
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: git show "$BASE_SHA:scripts/judge.py" > /tmp/judge.py
+          BASE_REF: ${{ github.event.repository.default_branch }}
+        run: |
+          git fetch --no-tags origin "$BASE_REF"
+          git show FETCH_HEAD:scripts/judge.py > /tmp/judge.py
 
       - name: Write the judgment
         env:
