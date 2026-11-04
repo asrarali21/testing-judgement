@@ -1,0 +1,14 @@
+scripts/judge.py
+  h_5da85191635ba8 259
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8b25452704f9f1c827bf3e2caac95a1c75cdf6e9",
+  "prompts": {},
+  "humans": {
+    "h_5da85191635ba8": {
+      "author": "asrarali21 <mohdasrar3825@gmail.com>"
+    }
+  }
+}
