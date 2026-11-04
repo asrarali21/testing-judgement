@@ -1,6 +1,6 @@
 import unittest
 from calculator import add
-from calculator import subtract ,multiply ,power ,average
+from calculator import subtract ,multiply ,power ,average ,modulo
 
 
 class CalculatorTests(unittest.TestCase):
@@ -22,6 +22,10 @@ class CalculatorTests(unittest.TestCase):
     def test_average_rejects_empty_input(self):
         with self.assertRaises(ValueError):
             average([])
+    
+    def test_modulo_rejects_zero(self):
+        with self.assertRaises(ValueError):
+            modulo(10, 0)
 
 
 if __name__ == "__main__":
