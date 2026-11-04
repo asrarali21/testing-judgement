@@ -1,0 +1,30 @@
+docs/COMPETENCY_POC.md
+  s_43b451660d0f4d::t_8a397192ec1e74 83-91,102-103
+.github/workflows/judge.yml
+  s_43b451660d0f4d::t_41e5c9cfd62566 65-66
+scripts/load_helix.py
+  s_43b451660d0f4d::t_d6386f42201188 126-132,184-190,238-241,411-433
+  s_43b451660d0f4d::t_2ead8f596895fb 133-137
+tests/test_load_helix.py
+  s_43b451660d0f4d::t_e2fb29661dc2c7 63-64,76-77
+  s_43b451660d0f4d::t_9abda0aec6c5c9 23,45
+scripts/judge.py
+  s_43b451660d0f4d::t_41e5c9cfd62566 215-218,221,223-224,226-242,244-264,268-285,287,320-323,326-327
+  s_43b451660d0f4d::t_d6386f42201188 265-267
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5bffd287bb43b512d6591012e26188f7ec91bf99",
+  "prompts": {},
+  "sessions": {
+    "s_43b451660d0f4d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a4ec-946e-7853-9386-9758d8211d6b",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "asrarali21 <mohdasrar3825@gmail.com>"
+    }
+  }
+}
