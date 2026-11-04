@@ -1,0 +1,16 @@
+.github/workflows/judge.yml
+  h_5da85191635ba8 38-41
+scripts/judge.py
+  h_5da85191635ba8 272-279
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bfd5fe7ff60f4da795c3061b9831a8cb116299fb",
+  "prompts": {},
+  "humans": {
+    "h_5da85191635ba8": {
+      "author": "asrarali21 <mohdasrar3825@gmail.com>"
+    }
+  }
+}
