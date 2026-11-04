@@ -80,7 +80,15 @@ python3 scripts/load_helix.py judgments/**/*.json
 
 The loader replaces snapshots, so every canonical artifact must be supplied on
 each load. It creates the `Engineering performance POC` workspace, ingests
-`pull_requests` and `developer_metrics`, and saves a 12-widget Home board.
+`pull_requests` and `developer_metrics`, and saves the Home board.
+
+The pull-request workflow uses Gemini to produce an approximate
+`estimated_ai_assistance_pct` for each assessable changed-code diff. The
+estimate belongs to the pull request, not the developer. Download the workflow
+artifacts, expand them locally, then run the loader command above to refresh
+Helix on demand. The workflow writes `assessment_status`,
+`estimated_ai_assistance_pct`, and diff-specific `evidence`; operational
+metadata such as the model, commit, and truncation status is added separately.
 
 The Helix application must already be running and expose the Home-board API.
 Set `HELIX_ORIGIN` only when it is not running at `http://localhost:3001`.
@@ -91,6 +99,8 @@ Set `HELIX_ORIGIN` only when it is not running at `http://localhost:3001`.
 - Lead time includes reviewer and queue delays.
 - CI failures can be caused by infrastructure or flaky tests.
 - Requested changes can indicate difficult work rather than poor quality.
+- Gemini's AI-assistance percentage is an approximate diff-level heuristic. It
+  cannot establish authorship, intent, or a developer's capability.
 - GitHub-only evidence cannot measure Jira delivery commitments, production
   defects, deployment outcomes, architecture skill, or business impact.
 - Never use the provisional signal as an employment decision.

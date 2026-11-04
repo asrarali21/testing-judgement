@@ -123,6 +123,18 @@ def collapse(rows):
                 if base.get("event") == "closed"
                 else "open"
             )
+        # Gemini returns evidence as JSON for the workflow artifact. Store it
+        # as one text field in the tabular Helix dataset so every PR remains
+        # queryable without relying on array-column support.
+        if isinstance(base.get("evidence"), list):
+            base["evidence"] = " ".join(
+                str(item).strip() for item in base["evidence"] if str(item).strip()
+            ) or None
+        # Older artifacts predate the Gemini assessment. Keep their schema
+        # compatible with the new board and show them as not assessed.
+        base.setdefault("assessment_status", "unavailable")
+        base.setdefault("estimated_ai_assistance_pct", None)
+        base.setdefault("evidence", None)
         base["lead_time_hours"] = lead_time_hours(base)
         base["has_review_rework"] = number(base.get("review_iterations")) > 0
         base["has_ci_failure"] = number(base.get("workflow_failures")) > 0
@@ -169,6 +181,13 @@ def developer_metrics(rows):
         )
         requested = sum(int(number(row.get("changes_requested"))) for row in items)
         requests_per_merged = requested / len(merged) if merged else None
+        assessed = [
+            row
+            for row in items
+            if row.get("assessment_status") == "assessed"
+            and row.get("estimated_ai_assistance_pct") is not None
+        ]
+        ai_estimates = [number(row.get("estimated_ai_assistance_pct")) for row in assessed]
         delivery_level = competency_level(
             len(closed),
             completion_rate is not None
@@ -215,6 +234,10 @@ def developer_metrics(rows):
                 "changes_requested": requested,
                 "review_rework_prs": sum(
                     number(row.get("review_iterations")) > 0 for row in items
+                ),
+                "ai_assessed_prs": len(assessed),
+                "median_estimated_ai_assistance_pct": (
+                    round(statistics.median(ai_estimates), 2) if ai_estimates else None
                 ),
                 "delivery_level": delivery_level,
                 "quality_level": quality_level,
@@ -384,6 +407,29 @@ def save_board(workspace, datasets):
                     "breakdown",
                     DEVELOPER_DATASET,
                     f"SELECT quality_level AS label, COUNT(*) AS value FROM {DEVELOPER_DATASET} GROUP BY quality_level ORDER BY value DESC",
+                ),
+                widget(
+                    "AI assistance · PRs assessed",
+                    "Pull requests with a Gemini estimate based on their changed code diff.",
+                    "kpi",
+                    PR_DATASET,
+                    f"SELECT COUNT(*) AS value FROM {PR_DATASET} WHERE assessment_status = 'assessed'",
+                ),
+                widget(
+                    "AI assistance · Median estimate",
+                    "Median approximate AI-assistance estimate across assessed pull request diffs.",
+                    "kpi",
+                    PR_DATASET,
+                    f"SELECT MEDIAN(estimated_ai_assistance_pct) AS value FROM {PR_DATASET} WHERE assessment_status = 'assessed'",
+                    "percent",
+                ),
+                widget(
+                    "AI assistance · Estimate by PR",
+                    "Approximate Gemini estimate based only on each pull request's changed code diff.",
+                    "breakdown",
+                    PR_DATASET,
+                    f"SELECT '#' || CAST(pull_request AS VARCHAR) || ' · ' || title AS label, estimated_ai_assistance_pct AS value FROM {PR_DATASET} WHERE assessment_status = 'assessed' ORDER BY pull_request DESC",
+                    "percent",
                 ),
             ],
         },

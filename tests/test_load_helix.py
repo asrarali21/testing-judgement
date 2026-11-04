@@ -20,6 +20,7 @@ class CollapseTests(unittest.TestCase):
             "judged_at": "2026-11-01T10:00:00Z",
             "author_login": "dev",
             "ai_generated": True,
+            "evidence": ["The changed code follows a repeated template."],
             "created_at": "2026-11-01T08:00:00Z",
             "pr_state": "open",
         }
@@ -41,6 +42,7 @@ class CollapseTests(unittest.TestCase):
         self.assertEqual(row["pr_state"], "merged")
         self.assertEqual(row["lead_time_hours"], 3)
         self.assertEqual(row["ci_first_attempts"], 2)
+        self.assertEqual(row["evidence"], "The changed code follows a repeated template.")
 
 
 class DeveloperMetricTests(unittest.TestCase):
@@ -58,6 +60,8 @@ class DeveloperMetricTests(unittest.TestCase):
                     "workflow_failures": 0,
                     "changes_requested": 0 if number < 3 else 1,
                     "review_iterations": 1 if number == 3 else 0,
+                    "assessment_status": "assessed",
+                    "estimated_ai_assistance_pct": number * 10,
                 }
             )
 
@@ -69,6 +73,8 @@ class DeveloperMetricTests(unittest.TestCase):
         self.assertEqual(metric["median_merge_lead_time_hours"], 36)
         self.assertEqual(metric["ci_first_pass_rate"], 100)
         self.assertEqual(metric["review_rework_prs"], 1)
+        self.assertEqual(metric["ai_assessed_prs"], 3)
+        self.assertEqual(metric["median_estimated_ai_assistance_pct"], 20)
 
     def test_small_sample_is_insufficient(self):
         metric = load_helix.developer_metrics(
