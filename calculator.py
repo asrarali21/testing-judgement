@@ -9,3 +9,17 @@ def multiply(left,right):
 
 def power(base, exponent):
     return base ** exponent
+
+def average(values):
+    """Calculate the arithmetic mean of numeric values.
+    Args:
+        values: A non-empty sequence of numbers.
+    Returns:
+        The arithmetic mean as a float.
+    Raises:
+        ValueError: If values is empty.
+    """
+    items = list(values)
+    if not items:
+        raise ValueError("values must not be empty")
+    return sum(items) / len(items)
