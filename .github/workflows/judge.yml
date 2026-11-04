@@ -64,6 +64,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3.8-flash
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_MODEL: openai/gpt-oss-120b
         run: python3 /tmp/judge.py
 
       - uses: actions/upload-artifact@v7

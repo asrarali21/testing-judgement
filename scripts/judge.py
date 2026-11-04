@@ -198,6 +198,91 @@ def github_metrics(repository, number):
     }
 
 
+def parse_assessment(answer):
+    status = str(answer.get("assessment_status") or "")
+    if status not in {"assessed", "insufficient_evidence"}:
+        raise ValueError("assessment_status must be assessed or insufficient_evidence")
+    percentage = answer.get("estimated_ai_assistance_pct")
+    if status == "assessed":
+        if not isinstance(percentage, int) or isinstance(percentage, bool):
+            raise ValueError("assessed requires an integer percentage")
+        if not 0 <= percentage <= 100:
+            raise ValueError("estimated_ai_assistance_pct must be from 0 to 100")
+    elif percentage is not None:
+        raise ValueError("insufficient_evidence requires a null percentage")
+    raw_evidence = answer.get("evidence")
+    if not isinstance(raw_evidence, list) or len(raw_evidence) > 3:
+        raise ValueError("evidence must be a list with at most three items")
+    return status, percentage, [
+        str(item).strip() for item in raw_evidence if str(item).strip()
+    ]
+
+
+def gemini_assessment(key, model, prompt, diff):
+    body = json.dumps(
+        {
+            "contents": [{"parts": [{"text": prompt + "\n\nDIFF:\n" + diff}]}],
+            "generationConfig": {"responseMimeType": "application/json"},
+        }
+    ).encode()
+    request = urllib.request.Request(
+        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+        data=body,
+        headers={"Content-Type": "application/json", "x-goog-api-key": key},
+    )
+    with urllib.request.urlopen(request, timeout=120) as response:
+        payload = json.load(response)
+    return parse_assessment(
+        json.loads(payload["candidates"][0]["content"]["parts"][0]["text"])
+    )
+
+
+def groq_assessment(key, model, prompt, diff):
+    body = json.dumps(
+        {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": "Return only the requested JSON object."},
+                {"role": "user", "content": prompt + "\n\nDIFF:\n" + diff},
+            ],
+            "response_format": {"type": "json_object"},
+            "temperature": 0.1,
+        }
+    ).encode()
+    request = urllib.request.Request(
+        "https://api.groq.com/openai/v1/chat/completions",
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {key}",
+        },
+    )
+    with urllib.request.urlopen(request, timeout=90) as response:
+        payload = json.load(response)
+    return parse_assessment(json.loads(payload["choices"][0]["message"]["content"]))
+
+
+def retry_assessment(provider, request, attempts):
+    errors = []
+    for attempt in range(attempts):
+        try:
+            return request(), None
+        except urllib.error.HTTPError as error:
+            message = f"{provider} returned HTTP {error.code}."
+            retryable = error.code in {429, 500, 502, 503, 504}
+        except (TimeoutError, urllib.error.URLError) as error:
+            message = f"{provider} request failed: {error}"
+            retryable = True
+        except (KeyError, IndexError, TypeError, ValueError, json.JSONDecodeError) as error:
+            message = f"{provider} returned an invalid assessment: {error}"
+            retryable = False
+        errors.append(message)
+        if not retryable or attempt == attempts - 1:
+            break
+        time.sleep(10 * (attempt + 1))
+    return None, " ".join(errors)
+
+
 authors = []
 if os.path.exists("commit_authors.txt"):
     for line in open("commit_authors.txt", encoding="utf-8", errors="replace"):
@@ -217,72 +302,64 @@ estimated_ai_assistance_pct = None
 evidence = []
 assessment_error = None
 model = None
+judge_tool = None
 if skip_model:
     reason = "Lifecycle update only. The pull request was not assessed again."
 elif empty:
     assessment_status = "insufficient_evidence"
     reason = "No application code changed in this pull request."
 else:
-    key = os.environ.get("GEMINI_API_KEY", "").strip()
-    model = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash").strip()
-    if not key:
-        assessment_error = "GEMINI_API_KEY is not configured."
-    elif not model:
-        assessment_error = "GEMINI_MODEL is not configured."
+    prompt = (
+        "Assess only the supplied pull request diff. Estimate the approximate "
+        "percentage of changed code that appears AI-assisted. This is an uncertain "
+        "heuristic, not an authorship determination and not an assessment of the "
+        "developer. Return JSON only with exactly these keys: "
+        '{"assessment_status":"assessed" or "insufficient_evidence", '
+        '"estimated_ai_assistance_pct": integer from 0 to 100 or null, '
+        '"evidence": [up to three short, concrete observations about the diff]}. '
+        "Use insufficient_evidence with a null percentage when the diff cannot "
+        "support an estimate."
+    )
+    gemini_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    gemini_model = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash").strip()
+    groq_key = os.environ.get("GROQ_API_KEY", "").strip()
+    groq_model = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b").strip()
+    errors = []
+    if gemini_key and gemini_model:
+        print(f"Asking {gemini_model}. Diff length: {len(sent)} characters.", flush=True)
+        result, error = retry_assessment(
+            "Gemini",
+            lambda: gemini_assessment(gemini_key, gemini_model, prompt, sent),
+            attempts=3,
+        )
+        if result:
+            assessment_status, estimated_ai_assistance_pct, evidence = result
+            model = gemini_model
+            judge_tool = "gemini"
+        else:
+            errors.append(error)
     else:
-        prompt = (
-            "Assess only the supplied pull request diff. Estimate the approximate "
-            "percentage of changed code that appears AI-assisted. This is an "
-            "uncertain heuristic, not an authorship determination and not an "
-            "assessment of the developer. Return JSON only with exactly these keys: "
-            '{"assessment_status":"assessed" or "insufficient_evidence", '
-            '"estimated_ai_assistance_pct": integer from 0 to 100 or null, '
-            '"evidence": [up to three short, concrete observations about the diff]}. '
-            "Use insufficient_evidence with a null percentage when the diff cannot "
-            "support an estimate."
+        errors.append("GEMINI_API_KEY or GEMINI_MODEL is not configured.")
+    if judge_tool is None and groq_key and groq_model:
+        print(f"Falling back to {groq_model}.", flush=True)
+        result, error = retry_assessment(
+            "Groq",
+            lambda: groq_assessment(groq_key, groq_model, prompt, sent),
+            attempts=1,
         )
-        body = json.dumps(
-            {
-                "contents": [{"parts": [{"text": prompt + "\n\nDIFF:\n" + sent}]}],
-                "generationConfig": {"responseMimeType": "application/json"},
-            }
-        ).encode()
-        request = urllib.request.Request(
-            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-            data=body,
-            headers={"Content-Type": "application/json", "x-goog-api-key": key},
-        )
-        print(f"Asking {model}. Diff length: {len(sent)} characters.", flush=True)
-        try:
-            with urllib.request.urlopen(request, timeout=180) as response:
-                payload = json.load(response)
-            answer = json.loads(payload["candidates"][0]["content"]["parts"][0]["text"])
-            assessment_status = str(answer.get("assessment_status") or "")
-            if assessment_status not in {"assessed", "insufficient_evidence"}:
-                raise ValueError("assessment_status must be assessed or insufficient_evidence")
-            raw_pct = answer.get("estimated_ai_assistance_pct")
-            if assessment_status == "assessed":
-                if not isinstance(raw_pct, int) or isinstance(raw_pct, bool):
-                    raise ValueError("assessed requires an integer percentage")
-                estimated_ai_assistance_pct = raw_pct
-                if not 0 <= estimated_ai_assistance_pct <= 100:
-                    raise ValueError("estimated_ai_assistance_pct must be from 0 to 100")
-            elif raw_pct is not None:
-                raise ValueError("insufficient_evidence requires a null percentage")
-            raw_evidence = answer.get("evidence")
-            if not isinstance(raw_evidence, list) or len(raw_evidence) > 3:
-                raise ValueError("evidence must be a list with at most three items")
-            evidence = [str(item).strip() for item in raw_evidence if str(item).strip()]
-            reason = evidence[0] if evidence else "No diff-specific evidence returned."
-        except (KeyError, IndexError, TypeError, ValueError, json.JSONDecodeError) as error:
-            assessment_status = "unavailable"
-            assessment_error = f"Gemini returned an invalid assessment: {error}"
-        except urllib.error.HTTPError as error:
-            assessment_error = f"Gemini returned HTTP {error.code}."
-        except (TimeoutError, urllib.error.URLError) as error:
-            assessment_error = f"Gemini request failed: {error}"
-    if assessment_error:
+        if result:
+            assessment_status, estimated_ai_assistance_pct, evidence = result
+            model = groq_model
+            judge_tool = "groq"
+        else:
+            errors.append(error)
+    elif judge_tool is None:
+        errors.append("GROQ_API_KEY or GROQ_MODEL is not configured.")
+    if judge_tool is None:
+        assessment_error = " ".join(error for error in errors if error)
         reason = assessment_error
+    else:
+        reason = evidence[0] if evidence else "No diff-specific evidence returned."
 
 mark = "AI assistance assessed" if assessment_status == "assessed" else "Not assessed"
 
@@ -323,7 +400,7 @@ row = {
     "assessment_error": assessment_error,
     "mark": mark,
     "reason": reason,
-    "judge_tool": "gemini" if not skip_model and not empty else None,
+    "judge_tool": judge_tool if not skip_model and not empty else None,
     "assessment_schema_version": "ai-assistance-v1",
     "diff_characters": 0 if skip_model else len(sent),
     "diff_truncated": False if skip_model else len(diff) > 12000,
