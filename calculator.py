@@ -28,3 +28,6 @@ def modulo(left, right):
     if right == 0:
         raise ValueError("Cannot divide by zero")
     return left % right
+
+def clamp(value, low, high):
+    return max(low, min(value, high))
