@@ -1,0 +1,19 @@
+.github/workflows/judge.yml
+  s_43b451660d0f4d::t_f26f10d22899e5 38-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ebc25620498374ec1e9ab3f6c9ff45f3323a67cc",
+  "prompts": {},
+  "sessions": {
+    "s_43b451660d0f4d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a4ec-946e-7853-9386-9758d8211d6b",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "asrarali21 <mohdasrar3825@gmail.com>"
+    }
+  }
+}
